@@ -28,6 +28,8 @@ export interface UploadMeta {
   status: 'uploading' | 'ready' | 'error'
   error?: string
   previewUrl?: string
+  /** Byte-budgeted text preview for large text files, shown in the dock. */
+  preview?: string
   relativePath?: string
 }
 
@@ -38,7 +40,9 @@ export interface UploadResponse {
   bytes?: number
   sniffedType?: string
   label?: string
-  /** Text preview for large text files; currently not produced by the host. */
+  /** Full decoded text of a small text file, dropped straight into the composer. */
+  inlineText?: string
+  /** Byte-budgeted text preview of a large text file, shown in the dock. */
   preview?: string
   imageMode?: 'native' | 'ocr'
   imageDescription?: string

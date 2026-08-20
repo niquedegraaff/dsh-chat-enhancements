@@ -48,6 +48,7 @@ export async function uploadFile(actx: AgentContext, file: File, sessionId: stri
     label: payload.label ?? name.slice(name.lastIndexOf('.') + 1).toUpperCase(),
     status: 'ready',
     ...(payload.relativePath !== undefined ? { relativePath: payload.relativePath } : {}),
+    ...(payload.preview !== undefined ? { preview: payload.preview } : {}),
     ...(file.type.startsWith('image/') ? { previewUrl: URL.createObjectURL(file) } : {})
   })
   clearUploadError()
@@ -73,15 +74,24 @@ export async function uploadFile(actx: AgentContext, file: File, sessionId: stri
     return payload.path
   }
 
+  // Small text files: drop the decoded content straight into the composer
+  // (Claude-desktop style); the file still lands in .dsh-uploads for later reads.
+  if (payload.inlineText !== undefined) {
+    actx.emit('slash/input-insert-text', {
+      text: payload.inlineText,
+      span: { start: state.draft.length, end: state.draft.length, draftRev: state.draftRev }
+    })
+    return payload.path
+  }
+
   // Larger text or documents: insert a path reference (Codex-style
   // `@relative/path`); the agent reads it with read_document (converted to
-  // Markdown on demand).
+  // Markdown on demand). The dock card carries the preview snippet.
   const refText = payload.relativePath !== undefined ? `@${payload.relativePath}` : payload.path
-  const label = payload.preview !== undefined ? `[file: ${name}] (preview) ${payload.preview}` : ''
   const reference: ReferenceInsert = {
     source: SOURCE_NAME,
     ref: payload.path,
-    label,
+    label: name,
     clipboardText: refText
   }
   actx.emit('slash/input-insert-reference', {

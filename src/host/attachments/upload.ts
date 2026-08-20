@@ -88,6 +88,21 @@ export function sanitizeSessionId(id: string): string {
   return cleaned === '' ? 'anonymous' : cleaned
 }
 
+/** Truncate a string to a UTF-8 byte budget without splitting a code point. */
+export function truncateUtf8(text: string, maxBytes: number): string {
+  if (maxBytes <= 0) return ''
+  if (Buffer.byteLength(text, 'utf8') <= maxBytes) return text
+  let bytes = 0
+  let end = 0
+  for (const ch of text) {
+    const len = Buffer.byteLength(ch, 'utf8')
+    if (bytes + len > maxBytes) break
+    bytes += len
+    end += ch.length
+  }
+  return text.slice(0, end)
+}
+
 export function createUploadHandler(options: UploadOptions) {
   const {
     maxBytes,
@@ -214,6 +229,21 @@ export function createUploadHandler(options: UploadOptions) {
         }
       }
 
+      // Small text files return their decoded content inline (Claude-desktop
+      // style, dropped straight into the composer); larger text files return a
+      // byte-budgeted preview for the input-dock indicator. Documents and
+      // binaries stay reference-only (read lazily via read_document).
+      let inlineText: string | undefined
+      let preview: string | undefined
+      if (sniffResult.type === 'text') {
+        const text = decodeText(data, sniffResult.encoding).replace(/^\uFEFF/, '')
+        if (data.length <= inlineTextLimit) {
+          inlineText = text
+        } else {
+          preview = truncateUtf8(text, previewTextLimit)
+        }
+      }
+
       res.writeHead(200, { 'content-type': 'application/json' })
       res.end(
         JSON.stringify({
@@ -224,6 +254,8 @@ export function createUploadHandler(options: UploadOptions) {
           sessionId: meta.sessionId,
           sniffedType: meta.sniff.type,
           label: meta.sniff.label,
+          ...(inlineText !== undefined ? { inlineText } : {}),
+          ...(preview !== undefined ? { preview } : {}),
           ...(meta.imageMode !== undefined ? { imageMode: meta.imageMode } : {}),
           ...(meta.imageDescription !== undefined ? { imageDescription: meta.imageDescription } : {}),
           ...(meta.deduplicated ? { deduplicated: true } : {})

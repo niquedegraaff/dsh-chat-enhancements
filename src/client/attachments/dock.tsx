@@ -56,6 +56,11 @@ export function UploadDock({ attach, sessionId, t }: AttachmentsSlotProps) {
                   {meta.name}
                 </div>
                 <div className="dsh-upload-size">{formatBytes(meta.bytes)}</div>
+                {meta.preview !== undefined && (
+                  <div className="dsh-upload-preview" title={meta.preview}>
+                    {meta.preview}
+                  </div>
+                )}
                 <Tooltip label={t('card.remove')} side="top">
                   <button
                     type="button"

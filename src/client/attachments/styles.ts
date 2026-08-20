@@ -19,6 +19,7 @@ export function injectCss(): void {
 .dsh-upload-thumb{width:44px;height:44px;object-fit:cover;border-radius:6px}
 .dsh-upload-name{width:100%;font-size:12px;line-height:16px;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
 .dsh-upload-size{color:var(--dsw-alias-label-tertiary);font-size:10.5px;flex:none}
+.dsh-upload-preview{width:100%;font-size:10px;line-height:13px;color:var(--dsw-alias-label-tertiary);text-align:left;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-all;font-family:var(--ds-font-family-code,monospace)}
 .dsh-upload-remove{border:none;background:transparent;color:var(--dsw-alias-label-tertiary);cursor:pointer;padding:2px;border-radius:4px;display:inline-flex;line-height:0;flex:none}
 .dsh-upload-remove:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
 .dsh-upload-card>.dsh-upload-remove{position:absolute;top:4px;right:4px}

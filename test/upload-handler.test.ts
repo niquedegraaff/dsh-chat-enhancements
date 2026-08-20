@@ -31,7 +31,7 @@ function startUploadServer(): Promise<{ server: ReturnType<typeof createServer>;
   })
 }
 
-test('upload handler: text file uploads with relative path reference', async () => {
+test('upload handler: small text file uploads inline', async () => {
   const { server, url } = await startUploadServer()
   try {
     const res = await fetch(`${url}/api/upload`, {
@@ -43,7 +43,7 @@ test('upload handler: text file uploads with relative path reference', async () 
     const body = (await res.json()) as { path: string; name: string; sniffedType: string; relativePath?: string; inlineText?: string }
     assert.equal(body.name, 'hello.txt')
     assert.equal(body.sniffedType, 'text')
-    assert.equal(body.inlineText, undefined, 'no content inlining — Codex-style reference only')
+    assert.equal(body.inlineText, 'hello upload')
     assert.equal(typeof body.relativePath, 'string')
     assert.match(body.path, /\.dsh-uploads[/\\]good-session/)
   } finally {
@@ -51,18 +51,21 @@ test('upload handler: text file uploads with relative path reference', async () 
   }
 })
 
-test('upload handler: code file uploads as reference (no inlining)', async () => {
+test('upload handler: large text file returns preview (no inline)', async () => {
   const { server, url } = await startUploadServer()
   try {
     const res = await fetch(`${url}/api/upload`, {
       method: 'POST',
-      headers: { 'x-session-id': 'good-session', 'x-file-name': 'code.js' },
-      body: 'const a = 1;\n'
+      headers: { 'x-session-id': 'good-session', 'x-file-name': 'big.txt' },
+      body: 'a'.repeat(20000)
     })
     assert.equal(res.status, 200)
-    const body = (await res.json()) as { sniffedType: string; inlineText?: string; relativePath?: string }
+    const body = (await res.json()) as { sniffedType: string; inlineText?: string; preview?: string; relativePath?: string }
     assert.equal(body.sniffedType, 'text')
     assert.equal(body.inlineText, undefined)
+    assert.equal(typeof body.preview, 'string')
+    assert.ok((body.preview as string).length > 0)
+    assert.ok(Buffer.byteLength(body.preview as string, 'utf8') <= 1024)
     assert.equal(typeof body.relativePath, 'string')
   } finally {
     server.close()
