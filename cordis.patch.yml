@@ -1,0 +1,25 @@
+# dsh-chat-enhancements bundle patch: one insert registering the dual-face plugin.
+# The row `name` must match the package name; the node half's exported cordis
+# `name` must equal that package name too.
+- insert:
+    - id: chat-enhancements
+      name: 'dsh-chat-enhancements'
+      config:
+        uploadMaxBytes: 26214400
+        allowedExtensions: []
+        uploadTtlMs: 604800000
+        sweepIntervalMs: 3600000
+        maxConcurrentUploads: 4
+        maxFileBytes: 26214400
+        readLimit: 2000
+        sheetRowLimit: 200
+        maxSheets: 5
+        cacheEntries: 16
+        cacheMaxBytes: 67108864
+        inlineTextLimit: 8192
+        previewTextLimit: 2048
+        markitdownBin: ''
+        visionEndpoint: ''
+        visionModel: ''
+        visionApiKeyEnv: OPENAI_API_KEY
+        visionMaxBytes: 10485760
