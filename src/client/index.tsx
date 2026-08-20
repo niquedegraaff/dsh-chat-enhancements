@@ -13,7 +13,13 @@ import { UploadDock } from './attachments/dock.tsx'
 import type { ActionContext } from './attachments/types.ts'
 import type { Translator } from '../shared/locale.ts'
 
-export function apply(ctx: {
+/**
+ * Narrow structural view of the harness client context consumed by this plugin.
+ * The full service types live in the runtime-injected `@deepseek-ai/dsh-client-*`
+ * packages; keeping this self-contained lets the client face type-check without
+ * importing that whole graph.
+ */
+interface ClientContext {
   effect(fn: () => unknown): void
   inputTriggers: {
     registerSource(source: Record<string, unknown>): void
@@ -29,7 +35,9 @@ export function apply(ctx: {
     register(ns: string, dicts: Record<string, Record<string, string>>): void
     bind(ns: string): Translator
   }
-}): void {
+}
+
+export function apply(ctx: ClientContext): void {
   injectCss()
   ctx.effect(() => ctx.locale.register(NS, { zh, en }))
   const t = ctx.locale.bind(NS)

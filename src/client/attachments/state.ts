@@ -12,11 +12,14 @@ export function metaFor(sessionId: string): Map<string, UploadMeta> {
   return m
 }
 
-let uploadError: { seq: number; text: string } | null = null
-let errorSeq = 0
-const errorListeners = new Set<() => void>()
+/** Current upload-error state broadcast to subscribers. */
+export type UploadErrorState = { seq: number; text: string } | null
 
-export function subscribeErrors(listener: () => void): () => void {
+let uploadError: UploadErrorState = null
+let errorSeq = 0
+const errorListeners = new Set<(next: UploadErrorState) => void>()
+
+export function subscribeErrors(listener: (next: UploadErrorState) => void): () => void {
   errorListeners.add(listener)
   return () => {
     errorListeners.delete(listener)
@@ -25,10 +28,10 @@ export function subscribeErrors(listener: () => void): () => void {
 
 export function setUploadError(text: string): void {
   uploadError = { seq: ++errorSeq, text }
-  for (const listener of errorListeners) listener()
+  for (const listener of errorListeners) listener(uploadError)
 }
 
 export function clearUploadError(): void {
   uploadError = null
-  for (const listener of errorListeners) listener()
+  for (const listener of errorListeners) listener(uploadError)
 }

@@ -18,6 +18,9 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import z from '@deepseek-ai/schemastery'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
+import type { CredentialProvider } from '@deepseek-ai/dsh-credentials'
+import type { FsTarget, FsVersion } from '@deepseek-ai/dsh-fs'
+import type { ToolRuntime } from '@deepseek-ai/dsh-tools'
 import { PLUGIN_NAME } from '../shared/constants.ts'
 import { describeImage } from './attachments/vision.ts'
 import { defineReadDocumentTool, ParseCache } from './attachments/tool.ts'
@@ -35,30 +38,6 @@ export const inject = ['tools', 'fs', 'systemPrompt', 'webServer', 'sessions', '
 
 const MEBIBYTE = 1024 * 1024
 const DAY_MS = 24 * 60 * 60 * 1000
-
-/** Plugin config, mirroring the schemastery schema below. */
-export interface FileUploadConfig {
-  uploadMaxBytes: number
-  allowedExtensions: string[]
-  uploadTtlMs: number
-  sweepIntervalMs: number
-  maxConcurrentUploads: number
-  inlineTextLimit: number
-  previewTextLimit: number
-  maxFileBytes: number
-  readLimit: number
-  sheetRowLimit: number
-  maxSheets: number
-  cacheEntries: number
-  cacheMaxBytes: number
-  markitdownBin: string
-  markitdownTimeoutMs: number
-  visionEndpoint: string
-  visionModel: string
-  visionApiKeyEnv: string
-  visionMaxBytes: number
-  uploadDir: string
-}
 
 export const Config = z.object({
   /** Byte cap for one upload body. */
@@ -104,6 +83,9 @@ export const Config = z.object({
   uploadDir: z.string().default(join(process.cwd(), 'uploads'))
 })
 
+/** Plugin config, derived from the schema so the type can never drift from it. */
+export type FileUploadConfig = Schemastery.TypeT<typeof Config>
+
 function assertPositiveInteger(value: number, label: string): void {
   if (!Number.isInteger(value) || value < 1) throw new Error(`dsh-chat-enhancements: ${label} must be a positive integer`)
 }
@@ -125,7 +107,44 @@ async function resolveMarkitdownBin(configured: string): Promise<string> {
   }
 }
 
-export function apply(ctx: any, config: FileUploadConfig): void {
+/** Narrow view of the model-info service read through `ctx.get('llm')`. */
+interface HostLlmService {
+  resolveModelInfo(provider: string, model: string): Promise<{ inputModalities?: string[] }>
+}
+
+/** Narrow view of one session record returned by the harness sessions service. */
+interface HostSessionView {
+  header: { cwd?: string }
+  requestHeader?(): { config?: { provider?: string; model?: string } } | undefined
+}
+
+/**
+ * Narrow structural view of the harness host context consumed by this plugin.
+ * Self-contained (only the members actually used), so the host face type-checks
+ * without importing the full dsh-* service graph; `tools` and `credentials` reuse
+ * their real service types.
+ */
+interface HostContext {
+  effect(fn: () => unknown): void
+  get(name: 'llm'): HostLlmService | undefined
+  get(name: string): unknown
+  emit(event: string, target: FsTarget, observation: object, exec: object): void
+  tools: ToolRuntime
+  credentials: CredentialProvider
+  fs: {
+    resolve(path: string, opts?: { cwd?: string; signal?: AbortSignal }): Promise<FsTarget>
+    stat(target: FsTarget, signal?: AbortSignal): Promise<{ version: FsVersion; type: string; size?: number } | undefined>
+    readBytes(target: FsTarget, signal: AbortSignal | undefined, maxBytes: number): Promise<Uint8Array>
+  }
+  systemPrompt: { section(spec: { name: string; order: number; text: string }): unknown }
+  webServer: { register(spec: { kind: string; path: string; handler: unknown }): unknown }
+  sessions: {
+    get(sessionId: string): HostSessionView | undefined
+    list(): HostSessionView[]
+  }
+}
+
+export function apply(ctx: HostContext, config: FileUploadConfig): void {
   for (const [label, value] of [
     ['uploadMaxBytes', config.uploadMaxBytes],
     ['uploadTtlMs', config.uploadTtlMs],
@@ -271,7 +290,10 @@ export function apply(ctx: any, config: FileUploadConfig): void {
     config.uploadTtlMs,
     config.sweepIntervalMs
   )
-  ctx.on('dispose', disposeSweeper)
+  // Register the sweeper disposer through ctx.effect so it is torn down on
+  // hot-reload / plugin unload. (`ctx.on('dispose', …)` would listen for a
+  // lifecycle event this cordis fork does not emit.)
+  ctx.effect(() => disposeSweeper)
 
   // Kick the MarkItDown probe in the background so the first read_document
   // call does not pay the probe latency.

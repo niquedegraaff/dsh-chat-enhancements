@@ -41,6 +41,8 @@ export interface UploadResponse {
   bytes?: number
   sniffedType?: string
   label?: string
+  /** Text preview for large text files; currently not produced by the host. */
+  preview?: string
   imageMode?: 'native' | 'ocr'
   imageDescription?: string
   relativePath?: string

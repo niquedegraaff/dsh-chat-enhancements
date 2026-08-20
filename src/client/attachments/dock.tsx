@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Tooltip, IconCloseOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { metaFor, subscribeErrors } from './state.ts'
-import { badgeStyle, formatBytes } from './format.ts'
+import { fileBadgeExt, formatBytes } from './format.ts'
 import { DragOverlay } from './overlay.tsx'
 import type { AttachmentsProps } from './types.ts'
 
@@ -44,7 +44,7 @@ export function UploadDock({ attach, sessionId, t }: DockProps) {
       {entries.length > 0 && (
         <div className="dsh-upload-dock">
           {entries.map(([ref, meta]) => {
-            const badge = badgeStyle(meta.name)
+            const ext = fileBadgeExt(meta.name)
             return (
               <div key={ref} className="dsh-upload-card">
                 {meta.previewUrl !== undefined ? (
@@ -52,12 +52,9 @@ export function UploadDock({ attach, sessionId, t }: DockProps) {
                     src={meta.previewUrl}
                     alt={meta.name}
                     className="dsh-upload-thumb"
-                    style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 6 }}
                   />
                 ) : (
-                  <div className="dsh-upload-badge" style={{ background: badge.bg }}>
-                    {badge.ext}
-                  </div>
+                  <div className="dsh-upload-badge">{ext}</div>
                 )}
                 <div className="dsh-upload-name" title={meta.name}>
                   {meta.name}
