@@ -91,6 +91,8 @@ pnpm install
 pnpm typecheck   # strict TypeScript
 pnpm build       # tsc (host) + esbuild (client bundle)
 pnpm test        # node --test
+pnpm build:install  # build + copy lib/ into the running dsh profile; then restart dsh web + hard-refresh
+pnpm dev            # watch src/ → auto-build + install on every change
 ```
 
 ## Architecture

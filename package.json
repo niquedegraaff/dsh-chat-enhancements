@@ -80,6 +80,8 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node build.mjs",
+    "build:install": "npm run build && node scripts/install-lib.mjs",
+    "dev": "node scripts/dev-watch.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --test test/*.test.ts",
     "prepublishOnly": "npm run build && npm test"
