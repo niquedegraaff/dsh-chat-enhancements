@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Tooltip, IconCloseOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { metaFor, subscribeErrors } from './state.ts'
-import { fileBadgeExt, formatBytes } from './format.ts'
+import { formatBytes } from './format.ts'
 import { DragOverlay } from './overlay.tsx'
-import type { AttachmentsSlotProps } from './types.ts'
+import type { AttachmentDockSlotProps } from './types.ts'
 
-export function UploadDock({ attach, sessionId, t }: AttachmentsSlotProps) {
+export function UploadDock({ attach, sessionId, t }: AttachmentDockSlotProps) {
   const [metaVersion, setMetaVersion] = useState(0)
   const [error, setError] = useState<{ seq: number; text: string } | null>(null)
 
@@ -20,6 +20,10 @@ export function UploadDock({ attach, sessionId, t }: AttachmentsSlotProps) {
       for (const off of offs) off()
     }
   }, [])
+
+  // The dock sits in the composer's session-maybe seat: it stays mounted across
+  // the no-session/session transition, so render nothing until a session exists.
+  if (sessionId === undefined) return null
 
   const removeCard = (ref: string): void => {
     metaFor(sessionId).delete(ref)
@@ -40,18 +44,16 @@ export function UploadDock({ attach, sessionId, t }: AttachmentsSlotProps) {
       {entries.length > 0 && (
         <div className="dsh-upload-dock">
           {entries.map(([ref, meta]) => {
-            const ext = fileBadgeExt(meta.name)
             return (
               <div key={ref} className="dsh-upload-card">
-                {meta.previewUrl !== undefined ? (
+                {meta.previewUrl !== undefined && (
                   <img
                     src={meta.previewUrl}
                     alt={meta.name}
                     className="dsh-upload-thumb"
                   />
-                ) : (
-                  <div className="dsh-upload-badge">{ext}</div>
                 )}
+                <div className="dsh-upload-label">{meta.label}</div>
                 <div className="dsh-upload-name" title={meta.name}>
                   {meta.name}
                 </div>

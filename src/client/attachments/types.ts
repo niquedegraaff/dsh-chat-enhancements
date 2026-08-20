@@ -64,13 +64,13 @@ export interface AttachmentsProps extends AttachmentsInjected {
 }
 
 /**
- * Composed props of an entry registered into one of the input-region slots
- * (`conversation.input.left` / `conversation.input.dock`, both `list` + `session`
- * with the same `InputZone` owner share). The framework synthesizes the `t` seat
+ * Composed props of the attachment-dock entry, registered into the composer's
+ * `conversation.input.attachments` seat (single, session-maybe): rendered inside
+ * the composer card, above the textarea. The framework synthesizes the `t` seat
  * from the `locale:` registration and the `attach` seat from the inject factory.
  */
-export type AttachmentsSlotProps = ComposedProps<
-  'conversation.input.left',
+export type AttachmentDockSlotProps = ComposedProps<
+  'conversation.input.attachments',
   string,
   never,
   undefined,

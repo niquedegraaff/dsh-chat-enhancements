@@ -82,15 +82,14 @@ export function apply(ctx: ClientContext, config?: ClientConfig): void {
       PlusMenuButton
     )
   )
-  ctx.slots.inject('conversation.input.dock', () =>
+  ctx.slots.inject('conversation.input.attachments', () =>
     ctx.slots.register(
       {
-        name: 'conversation.input.dock',
-        id: 'dsh-chat-enhancements-dock',
-        order: 5,
+        name: 'conversation.input.attachments',
         locale: NS,
         inject: (sessionId) => ({
           attach: (files: File[]) => {
+            if (sessionId === undefined) return Promise.resolve()
             const scope = ctx.sessions.scope(sessionId)
             return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t, attachReferences)
           }
