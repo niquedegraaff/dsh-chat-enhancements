@@ -51,8 +51,8 @@ function scheduleBuild() {
     const started = Date.now()
     try {
       await run('pnpm', ['build'])
-      const target = installLib()
-      console.log(`[dev] built + installed -> ${target} (${Date.now() - started}ms)`)
+      const { target, mode } = installLib()
+      console.log(`[dev] built + installed (${mode}) -> ${target} (${Date.now() - started}ms)`)
       console.log('[dev] restart dsh web and hard-refresh the browser to load the new code')
     } catch (err) {
       console.error('[dev] rebuild failed:', err instanceof Error ? err.message : String(err))
@@ -72,8 +72,8 @@ for (const root of watched) {
 
 // Sync the already-built lib once at startup, then wait for changes.
 try {
-  const target = installLib()
-  console.log(`[dev] initial install -> ${target}`)
+  const { target, mode } = installLib()
+  console.log(`[dev] initial install (${mode}) -> ${target}`)
 } catch (err) {
   console.error('[dev] initial install skipped:', err instanceof Error ? err.message : String(err))
 }

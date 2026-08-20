@@ -95,6 +95,19 @@ pnpm build:install  # build + copy lib/ into the running dsh profile; then resta
 pnpm dev            # watch src/ → auto-build + install on every change
 ```
 
+**Idiomatic local dev** is to *link* this checkout into the running profile (dsh
+forwards `plugin add` to pnpm, so this is just a pnpm link) — then `pnpm build`
+writes straight into what the harness loads, and no copy step is needed:
+
+```sh
+dsh plugin --profile web add link:.   # once, from this checkout
+pnpm build                             # then restart dsh web + hard-refresh
+```
+
+`pnpm build:install` / `pnpm dev` are no-ops (safe) when the profile is linked;
+they only copy for copy-based (`github:`/`file:`) installs.
+
+
 ## Architecture
 
 ```

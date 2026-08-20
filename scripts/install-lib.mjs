@@ -6,7 +6,7 @@
 // or via:  pnpm build:install   (builds first, then installs)
 //
 // Override the target profile with DSH_CHAT_ENHANCEMENTS_PROFILE_LIB.
-import { cpSync, existsSync, lstatSync, mkdirSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, lstatSync, mkdirSync, realpathSync, rmSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import os from 'node:os'
@@ -29,12 +29,22 @@ export function resolveTargetDir() {
   return process.env.DSH_CHAT_ENHANCEMENTS_PROFILE_LIB || DEFAULT_PROFILE_LIB
 }
 
-/** Copy the built `lib/` into the running profile; returns the target path. */
+/** Copy the built `lib/` into the running profile; returns `{ target, mode }`. */
 export function installLib() {
   if (!existsSync(libDir)) {
     throw new Error(`lib/ not found at ${libDir} — run pnpm build first`)
   }
   const target = resolveTargetDir()
+
+  // When the profile is already linked to this checkout (pnpm `add link:.`
+  // makes the target a junction/symlink back to our own lib/), `pnpm build`
+  // writes straight into what the harness loads — nothing to copy. Detect by
+  // real path so we never copy a directory onto itself.
+  const realLib = realpathSync(libDir)
+  const realTarget = realpathSync(target, { throwIfNoEntry: false })
+  if (realTarget !== undefined && realTarget === realLib) {
+    return { target, mode: 'linked' }
+  }
 
   // Safety: on Windows, recursing into a junction/symlink can delete the *real*
   // target's contents. lstat reports both junctions and symlinks as symbolic
@@ -47,7 +57,7 @@ export function installLib() {
   }
   mkdirSync(target, { recursive: true })
   cpSync(libDir, target, { recursive: true })
-  return target
+  return { target, mode: 'copied' }
 }
 
 // Direct run (not imported by the dev watcher): install and report.
@@ -56,7 +66,11 @@ const isDirectRun =
   process.argv[1] !== undefined && norm(process.argv[1]) === norm(fileURLToPath(import.meta.url))
 
 if (isDirectRun) {
-  const target = installLib()
-  console.log(`[install-lib] copied ${libDir} -> ${target}`)
+  const { target, mode } = installLib()
+  if (mode === 'linked') {
+    console.log(`[install-lib] profile already linked to this checkout (${target}) — nothing to copy.`)
+  } else {
+    console.log(`[install-lib] copied ${libDir} -> ${target}`)
+  }
   console.log('[install-lib] restart dsh web and hard-refresh the browser to load the new code')
 }
