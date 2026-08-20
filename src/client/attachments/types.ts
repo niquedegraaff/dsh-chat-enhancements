@@ -1,10 +1,24 @@
 import type { ComposedProps, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { NS } from './constants.ts'
+import type { AttachmentsLocaleKey } from './locale.ts'
 
 // Loads the ui-conversation SlotMap declaration (conversation.input.left /
 // conversation.input.dock) so the composed slot props below resolve against
 // the real owner/scope contract instead of a hand-rolled key.
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
+
+/**
+ * Locale namespace declaration for the attachments feature. The namespace key
+ * must match `LOCALE_NS` from `src/shared/constants.ts`; the value is the exact
+ * dictionary key union, so `LocaleRuntime.register` and the framework-injected
+ * `t` seat are both checked against the real dictionary. Kept in this module
+ * (rather than an ambient .d.ts) so every importing component loads the merge.
+ */
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    chatEnhancements: AttachmentsLocaleKey
+  }
+}
 
 /** Per-session attachment metadata. */
 export interface UploadMeta {
