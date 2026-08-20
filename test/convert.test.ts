@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { decodeText } from '../src/convert.ts'
-import { sanitizeFileName, sanitizeSessionId } from '../src/upload.ts'
+import { decodeText } from '../src/host/attachments/convert.ts'
+import { sanitizeFileName, sanitizeSessionId } from '../src/host/attachments/upload.ts'
 
 test('decodeText: utf8', () => {
   assert.equal(decodeText(Buffer.from('hello', 'utf8'), 'utf8'), 'hello')

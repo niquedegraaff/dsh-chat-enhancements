@@ -97,14 +97,14 @@ pnpm test        # node --test
 
 ```
 src/
-├── index.ts        # entry: apply + Config schema + assembly
-├── detect.ts       # content sniffing (never trusts extensions)
-├── convert.ts      # MarkItDown engine + optional CLI backend
-├── vision.ts       # image explanations (vision discovery chain)
-├── upload.ts       # upload route: loopback/session/size/dedup/TTL
-├── tool.ts         # read_document: ctx.fs reads + paging + LRU cache
-└── client/
-    └── index.tsx   # "+" menu + drag (files/folders) + paste + cards
+├── index.ts            # thin re-export entry (keeps package main/lib shape)
+├── host/
+│   ├── index.ts        # plugin entry: apply + Config schema + assembly
+│   └── attachments/    # detect, convert, vision, upload, tool (read_document)
+├── client/
+│   ├── index.tsx       # client apply: locale, slots, input-trigger source
+│   └── attachments/    # "+" menu, upload flow, dock, drag/paste overlay
+└── shared/             # common constants + locale binding types
 ```
 
 Dual-face plugin: `dsh.bundle` (host) + `dsh.client` (web UI). No official patches — everything uses official seams (`ctx.webServer`, `ctx.tools`, `ctx.systemPrompt`, `ctx.sessions`, `slash/input-insert-text`, `slash/input-insert-reference`, and the client slot framework).

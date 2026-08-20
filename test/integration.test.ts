@@ -5,8 +5,8 @@ import { promisify } from 'node:util'
 import { mkdtempSync, writeFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { convertMarkitdown, probeMarkitdown, convertJs, convertMarkitdownNode, convertDocument } from '../src/convert.ts'
-import { sniff } from '../src/detect.ts'
+import { convertMarkitdown, probeMarkitdown, convertJs, convertMarkitdownNode, convertDocument } from '../src/host/attachments/convert.ts'
+import { sniff } from '../src/host/attachments/detect.ts'
 
 const execFileAsync = promisify(execFile) as (file: string, args: string[], opts: object) => Promise<{ stdout: string; stderr: string }>
 
