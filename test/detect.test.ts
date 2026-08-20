@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { sniff, detectEncoding } from '../src/detect.ts'
+import { sniff, detectEncoding } from '../src/host/attachments/detect.ts'
 
 test('sniff: plain UTF-8 text', () => {
   const data = Buffer.from('hello world\nline two\n', 'utf8')

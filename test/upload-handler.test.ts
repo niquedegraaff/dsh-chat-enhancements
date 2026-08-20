@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createUploadHandler } from '../src/upload.ts'
+import { createUploadHandler } from '../src/host/attachments/upload.ts'
 
 function startUploadServer(): Promise<{ server: ReturnType<typeof createServer>; url: string; port: number }> {
   const dir = mkdtempSync(join(tmpdir(), 'dshfu-up-'))
