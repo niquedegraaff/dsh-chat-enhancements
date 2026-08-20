@@ -18,6 +18,7 @@
         cacheMaxBytes: 67108864
         inlineTextLimit: 8192
         previewTextLimit: 2048
+        attachReferences: false
         markitdownBin: ''
         visionEndpoint: ''
         visionModel: ''

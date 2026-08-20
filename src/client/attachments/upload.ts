@@ -1,4 +1,5 @@
 import type { AgentContext } from '@deepseek-ai/dsh-client-runtime/client'
+import { SOURCE_NAME } from './constants.ts'
 import { clearUploadError, metaFor, setUploadError } from './state.ts'
 import type { AttachmentsTranslate, UploadResponse } from './types.ts'
 
@@ -10,7 +11,7 @@ export function httpErrorText(status: number, t: AttachmentsTranslate): string {
   return `HTTP ${status}`
 }
 
-export async function uploadFile(actx: AgentContext, file: File, sessionId: string, t: AttachmentsTranslate): Promise<string | null> {
+export async function uploadFile(actx: AgentContext, file: File, sessionId: string, t: AttachmentsTranslate, attachReferences: boolean): Promise<string | null> {
   const conversation = actx.get('conversation')
   if (conversation === undefined) throw new Error('conversation service unavailable')
   const input = conversation.input.for(actx)
@@ -83,7 +84,21 @@ export async function uploadFile(actx: AgentContext, file: File, sessionId: stri
   }
 
   // Larger text or documents: stay in the dock as an attachment the user can
-  // reference explicitly via `@filename` — no auto-insert at the caret.
+  // reference explicitly via `@filename` — no auto-insert at the caret. With
+  // `attachReferences`, append the reference to the END of the draft instead
+  // (Gemini-style: the file rides the message without the user typing it).
+  if (attachReferences) {
+    actx.emit('slash/input-insert-reference', {
+      reference: {
+        source: SOURCE_NAME,
+        ref: payload.path,
+        label: name,
+        appearance: 'file',
+        clipboardText: `@${name}`
+      },
+      span: { start: state.draft.length, end: state.draft.length, draftRev: state.draftRev }
+    })
+  }
   return payload.path
 }
 
@@ -145,10 +160,10 @@ export function filesFromClipboard(e: ClipboardEvent): File[] {
   return files
 }
 
-export async function attachFiles(actx: AgentContext, files: File[], sessionId: string, t: AttachmentsTranslate): Promise<void> {
+export async function attachFiles(actx: AgentContext, files: File[], sessionId: string, t: AttachmentsTranslate, attachReferences: boolean): Promise<void> {
   for (const file of files) {
     try {
-      await uploadFile(actx, file, sessionId, t)
+      await uploadFile(actx, file, sessionId, t, attachReferences)
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : String(err))
     }

@@ -11,8 +11,9 @@ It is based on [`dsh-file-upload`](https://github.com/HongMing-Huang/dsh-file-up
 - **Gemini-style "+" menu** — the composer's "+" opens the harness's own `Menu` component ("Upload files"), positioned left of the access-mode dropdown. The icon rotates to an "×" while the menu is open.
 - **Upload** — multi-file upload from the "+" menu, global drag-and-drop (files and folders), and paste-to-attach.
 - **Attachment cards** — uploaded files appear as removable, color-coded cards above the composer.
-- **Codex-style references** — files are sent as `@relative/path` references (never raw content dumped into the composer); the agent reads them with `read_document`.
-- **`@` mentions** — type `@` in the composer to pick an uploaded file by its relative path.
+- **Attachments stay in context** — uploaded documents live in `.dsh-uploads/<sessionId>/` and appear as removable cards; the agent reads them with `read_document` when you reference them (by name, `@`, or prose like "the file I just added").
+- **Inline text + previews** — small text files are dropped straight into the composer; larger text files show a preview snippet on their card.
+- **`@` mentions** — type `@` in the composer to pick an uploaded file by name (the menu shows the filename, not the storage path).
 - **Document → Markdown, fully bundled** — the MarkItDown engine ships inside the plugin (Microsoft MarkItDown TypeScript port, `markitdown-node`): PDF / DOCX / PPTX / XLSX / HTML / CSV / JSON / XML / RSS / Atom / ZIP / Jupyter / image OCR / audio transcription. **No Python, no downloads, no setup.**
 - **Image handling** — multimodal routes (and vision bridges) use the official `read_image` tool; text-only routes get an automatic image description via a vision discovery chain (local Ollama → OpenAI-compatible endpoint with a dsh-credentials key).
 - **`read_document` tool** — paged Markdown reading (`offset`/`limit`) with a byte-budgeted LRU cache, reading through `ctx.fs` (inherits sandbox and fs-observation policy).
@@ -30,7 +31,7 @@ dsh plugin --profile web add github:niquedegraaff/dsh-chat-enhancements
 ## Usage
 
 1. Click the "+" in the composer toolbar, or drag files/folders anywhere over the window (or paste them into the composer).
-2. Documents appear as attachment cards; their `@relative/path` reference is sent with your message.
+2. Documents appear as attachment cards; small text files are inlined, and documents are read by the agent when you reference them (by name, `@`, or prose).
 3. The agent reads documents with `read_document <path>` — converted to Markdown on demand, pageable with `offset`/`limit`.
 
 ### MarkItDown (fully bundled — no downloads, no setup)
@@ -71,6 +72,7 @@ The route detection mirrors the official `read_image` gate (`ctx.llm.resolveMode
 | `maxConcurrentUploads` | 4 | Concurrent upload limit |
 | `inlineTextLimit` | 8192 (8 KB) | Text inlined into the composer up to this size |
 | `previewTextLimit` | 2048 (2 KB) | Preview length for larger text files |
+| `attachReferences` | `false` | When `true`, uploading a document also appends an `@filename` reference to the end of the composer draft |
 | `maxFileBytes` | 25165824 | Byte cap for one document read |
 | `readLimit` | 2000 | Max lines returned by one `read_document` call |
 | `sheetRowLimit` | 200 | Rows kept per XLSX sheet |

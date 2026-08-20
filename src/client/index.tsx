@@ -16,7 +16,13 @@ import type { InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigge
 // real LocaleRuntime (typed register/bind) instead of an untyped member.
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 
-export function apply(ctx: ClientContext): void {
+/** Client-side view of the plugin config (only the fields this face reads). */
+interface ClientConfig {
+  attachReferences?: boolean
+}
+
+export function apply(ctx: ClientContext, config?: ClientConfig): void {
+  const attachReferences = config?.attachReferences === true
   injectCss()
   ctx.effect(() => ctx.locale.register(NS, { zh, en }))
   const t = ctx.locale.bind(NS)
@@ -69,7 +75,7 @@ export function apply(ctx: ClientContext): void {
         inject: (sessionId) => ({
           attach: (files: File[]) => {
             const scope = ctx.sessions.scope(sessionId)
-            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t)
+            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t, attachReferences)
           }
         })
       },
@@ -86,7 +92,7 @@ export function apply(ctx: ClientContext): void {
         inject: (sessionId) => ({
           attach: (files: File[]) => {
             const scope = ctx.sessions.scope(sessionId)
-            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t)
+            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t, attachReferences)
           }
         })
       },
