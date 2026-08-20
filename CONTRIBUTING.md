@@ -34,7 +34,7 @@ src/
 ├── upload.ts       # upload route: loopback/session/size/dedup/TTL
 ├── tool.ts         # read_document: ctx.fs reads + paging + LRU cache
 └── client/
-    └── index.tsx   # paperclip button + drag overlay + attachment cards
+    └── index.tsx   # "+" menu + drag overlay + attachment cards
 ```
 
 ## Design rules

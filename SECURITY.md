@@ -4,7 +4,7 @@
 
 Please do **not** open a public issue for security vulnerabilities.
 
-Report privately by opening a [security advisory](https://github.com/HongMing-Huang/dsh-file-upload/security/advisories/new)
+Report privately by opening a [security advisory](https://github.com/niquedegraaff/dsh-chat-enhancements/security/advisories/new)
 on this repository, or email the maintainer through the GitHub contact link on
 the profile page. You should receive a response within 72 hours.
 

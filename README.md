@@ -1,41 +1,36 @@
 # dsh-chat-enhancements
 
-**File-message plugin for DeepSeek Harness (dsh).** A Gemini-style "+" composer menu (file/folder upload + an extensible creative-tools section), plus Claude/Codex-style drag-and-drop, paste-to-attach, multi-file support; content sniffing; fully bundled document → Markdown conversion (MarkItDown engine, 20+ formats, image OCR); Codex-style `@relative/path` references; automatic image explanations for text-only models; and a `read_document` tool for agents.
+Chat-experience plugin for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh).
 
-[![npm](https://img.shields.io/npm/v/dsh-chat-enhancements)](https://www.npmjs.com/package/dsh-chat-enhancements)
-[![CI](https://github.com/niquedegraaff/dsh-chat-enhancements/actions/workflows/ci.yml/badge.svg)](https://github.com/niquedegraaff/dsh-chat-enhancements/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+This plugin is an umbrella for chat-experience upgrades. It currently provides a **Gemini-style "+" composer menu for attachments** — multi-file upload, global drag-and-drop (files and folders), paste-to-attach, Codex-style `@path` references, and a `read_document` tool for agents. Voice dictation, markdown rendering of your own messages, and a redesigned composer bar are planned.
 
-English | [中文](README.zh.md)
-
-> **Zero-config, install-and-use.** Every feature works out of the box with
-> sensible defaults — no Python, no downloads, no picking backends. Image
-> explanations auto-discover a vision endpoint (local Ollama → OpenAI-compatible
-> key from the dsh credentials seam).
+It is based on [`dsh-file-upload`](https://github.com/HongMing-Huang/dsh-file-upload) by HongMing-Huang (MIT) — see [License / Attribution](#license--attribution).
 
 ## Features
 
-- **Upload** — composer "+" menu (files & folder) plus a global drag-and-drop overlay ("release to attach"), multi-file support.
-- **Attachment cards** — color-coded type badges (PDF red / DOC blue / XLS green / TXT gray / ZIP purple / JSON gold) with name and size; removable.
-- **Codex-style file references** — uploaded files appear in the message as `@relative/path` references (like OpenAI Codex), never as raw content dumped into the composer; the agent reads the file with `read_document` (converted to Markdown on demand).
-- **Codex-style `@` mentions** — type `@` in the composer to pick any uploaded file by its relative path; the reference inserts as a mention.
+- **Gemini-style "+" menu** — the composer's "+" opens the harness's own `Menu` component ("Upload files"), positioned left of the access-mode dropdown. The icon rotates to an "×" while the menu is open.
+- **Upload** — multi-file upload from the "+" menu, global drag-and-drop (files and folders), and paste-to-attach.
+- **Attachment cards** — uploaded files appear as removable, color-coded cards above the composer.
+- **Codex-style references** — files are sent as `@relative/path` references (never raw content dumped into the composer); the agent reads them with `read_document`.
+- **`@` mentions** — type `@` in the composer to pick an uploaded file by its relative path.
 - **Document → Markdown, fully bundled** — the MarkItDown engine ships inside the plugin (Microsoft MarkItDown TypeScript port, `markitdown-node`): PDF / DOCX / PPTX / XLSX / HTML / CSV / JSON / XML / RSS / Atom / ZIP / Jupyter / image OCR / audio transcription. **No Python, no downloads, no setup.**
-- **Image explanation for text-only models** — upload an image and the plugin automatically generates a **description ("讲解图片")** through a vision discovery chain, so the DeepSeek API (text-only) can reason about the image: explicit `visionEndpoint` → local Ollama with a VL model (e.g. DeepSeek-VL2, zero-config) → OpenAI-compatible endpoint with a dsh-credentials key. Multimodal routes / vision bridges keep the official `read_image` path.
-- **`read_document` tool for agents** — line-numbered paging (`offset`/`limit`), byte-budgeted LRU cache (invalidated on file change), size pre-checks, reads through `ctx.fs` (inherits sandbox and fs-observation policy).
+- **Image handling** — multimodal routes (and vision bridges) use the official `read_image` tool; text-only routes get an automatic image description via a vision discovery chain (local Ollama → OpenAI-compatible endpoint with a dsh-credentials key).
+- **`read_document` tool** — paged Markdown reading (`offset`/`limit`) with a byte-budgeted LRU cache, reading through `ctx.fs` (inherits sandbox and fs-observation policy).
 - **Security** — loopback-only uploads, sanitized file names, session-isolated storage (`.dsh-uploads/<sessionId>`), sha256 content dedup, bounded concurrency, TTL sweep.
 
 ## Install
 
+From GitHub (current — the package is not yet on npm):
+
 ```sh
-dsh plugin --profile web add dsh-chat-enhancements
-# restart dsh web
+dsh plugin --profile web add github:niquedegraaff/dsh-chat-enhancements
+# restart dsh web, then hard-refresh the browser
 ```
 
 ## Usage
 
-1. Click the "+" in the composer toolbar, or drag files anywhere over the window;
-2. Small text files land directly in the composer; documents appear as attachment cards and their path is sent with the message;
+1. Click the "+" in the composer toolbar, or drag files/folders anywhere over the window (or paste them into the composer).
+2. Documents appear as attachment cards; their `@relative/path` reference is sent with your message.
 3. The agent reads documents with `read_document <path>` — converted to Markdown on demand, pageable with `offset`/`limit`.
 
 ### MarkItDown (fully bundled — no downloads, no setup)
@@ -48,18 +43,6 @@ dsh plugin --profile web add dsh-chat-enhancements
 
 > Optional upgrade: if an official MarkItDown CLI already exists on your machine (or is set via `markitdownBin`), the plugin prefers it (adds EPUB and more); without one the bundled engine is always available.
 
-```yaml
-- id: chat-enhancements
-  config:
-    markitdownBin: /path/to/your/markitdown   # optional; empty = bundled engine only
-```
-
-Startup log (bundled mode):
-
-```
-[dsh-chat-enhancements] Document → Markdown ready: bundled MarkItDown engine (20+ formats, image OCR) — fully packaged, no downloads, no Python.
-```
-
 ### How images are handled (auto-explained)
 
 The plugin **detects your session's model capability at upload time**:
@@ -67,12 +50,10 @@ The plugin **detects your session's model capability at upload time**:
 | Detected route | What happens |
 |---|---|
 | **Multimodal model** (declares `image` input, e.g. GPT-4o / Qwen-VL / Claude / Gemini) | `imageMode: native` — the agent uses the official `read_image` tool; the image enters model context directly |
-| **Vision bridge installed** ([dsh-vision-proxy](https://github.com/Flyvhidbwo/dsh-vision-proxy) and similar) | detected automatically (they declare image input on their route) — same native path |
+| **Vision bridge installed** (e.g. dsh-vision-proxy) | detected automatically (they declare image input on their route) — same native path |
 | **Text-only model** (the DeepSeek API is text-only) | an automatic **image description** is generated via the vision discovery chain and inserted with the message — the model reasons about the image content immediately |
 
 **Vision discovery chain** (zero-config): ① explicit `visionEndpoint`/`visionModel` → ② **local Ollama** at `http://localhost:11434` (picks a VL model such as DeepSeek-VL2 — images never leave the machine) → ③ OpenAI standard endpoint using a key from the dsh credentials seam.
-
-> Note: DeepSeek's official API does not offer vision input (the multimodal line — DeepSeek-VL2/Janus — is open-source and self-hostable); deploy DeepSeek-VL2 via Ollama for a fully local "official DeepSeek vision" experience.
 
 The route detection mirrors the official `read_image` gate (`ctx.llm.resolveModelInfo` + `inputModalities`).
 
@@ -107,8 +88,9 @@ The route detection mirrors the official `read_image` gate (`ctx.llm.resolveMode
 
 ```sh
 pnpm install
-pnpm build     # tsc (host) + esbuild (client bundle)
-pnpm test      # node --test
+pnpm typecheck   # strict TypeScript
+pnpm build       # tsc (host) + esbuild (client bundle)
+pnpm test        # node --test
 ```
 
 ## Architecture
@@ -125,7 +107,7 @@ src/
     └── index.tsx   # "+" menu + drag (files/folders) + paste + cards
 ```
 
-Dual-face plugin: `dsh.bundle` (host) + `dsh.client` (web UI). No official patches — everything uses official seams (`ctx.webServer`, `ctx.tools`, `ctx.systemPrompt`, `ctx.sessions`, `slash/input-insert-text`, `slash/input-insert-reference`).
+Dual-face plugin: `dsh.bundle` (host) + `dsh.client` (web UI). No official patches — everything uses official seams (`ctx.webServer`, `ctx.tools`, `ctx.systemPrompt`, `ctx.sessions`, `slash/input-insert-text`, `slash/input-insert-reference`, and the client slot framework).
 
 ## Security
 
@@ -135,6 +117,6 @@ Dual-face plugin: `dsh.bundle` (host) + `dsh.client` (web UI). No official patch
 - sha256 content dedup, bounded concurrency (429 on overload), TTL sweep.
 - Text extraction parses bytes, never trusts extensions; binaries are handed to the agent by path only.
 
-## License
+## License / Attribution
 
-MIT
+MIT. Based on [`dsh-file-upload`](https://github.com/HongMing-Huang/dsh-file-upload) by HongMing-Huang (MIT). See [LICENSE](LICENSE).
