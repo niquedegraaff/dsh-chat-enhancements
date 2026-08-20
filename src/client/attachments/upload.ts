@@ -1,6 +1,4 @@
 import type { AgentContext } from '@deepseek-ai/dsh-client-runtime/client'
-import type { ReferenceInsert } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
-import { SOURCE_NAME } from './constants.ts'
 import { clearUploadError, metaFor, setUploadError } from './state.ts'
 import type { AttachmentsTranslate, UploadResponse } from './types.ts'
 
@@ -84,24 +82,8 @@ export async function uploadFile(actx: AgentContext, file: File, sessionId: stri
     return payload.path
   }
 
-  // Larger text or documents: insert a path reference (Codex-style
-  // `@relative/path`); the agent reads it with read_document (converted to
-  // Markdown on demand). The dock card carries the preview snippet.
-  const refText = payload.relativePath !== undefined ? `@${payload.relativePath}` : payload.path
-  const reference: ReferenceInsert = {
-    source: SOURCE_NAME,
-    ref: payload.path,
-    label: name,
-    clipboardText: refText
-  }
-  actx.emit('slash/input-insert-reference', {
-    reference,
-    span: {
-      start: state.draft.length,
-      end: state.draft.length,
-      draftRev: state.draftRev
-    }
-  })
+  // Larger text or documents: stay in the dock as an attachment the user can
+  // reference explicitly via `@filename` — no auto-insert at the caret.
   return payload.path
 }
 

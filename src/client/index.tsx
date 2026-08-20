@@ -7,7 +7,7 @@ import { zh, en } from './attachments/locale.ts'
 import { injectCss } from './attachments/styles.ts'
 import { attachFiles } from './attachments/upload.ts'
 import { uploadMetaBySession } from './attachments/state.ts'
-import { formatBytes } from './attachments/format.ts'
+import { fileGlyph, formatBytes } from './attachments/format.ts'
 import { PlusMenuButton } from './attachments/menu.tsx'
 import { UploadDock } from './attachments/dock.tsx'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
@@ -24,32 +24,33 @@ export function apply(ctx: ClientContext): void {
   const referenceSource: InputTriggerSource = {
     trigger: '@',
     name: SOURCE_NAME,
-    // Codex-style: pick an already-uploaded file by its relative path.
+    // Codex-style: pick an already-uploaded file by its relative path. The
+    // menu shows the bare filename (not the storage path), with the path
+    // carried opaquely on `value` so `onPick` can resolve it losslessly.
     candidates: async (session, _req) => {
       const metas = uploadMetaBySession.get(session.sessionId)
       if (metas === undefined) return []
       return Array.from(metas.entries()).map(([path, meta]) => ({
-        name: meta.relativePath ?? path,
+        name: meta.name,
         description: `${meta.label} · ${formatBytes(meta.bytes)}`,
-        icon: '📎'
+        icon: fileGlyph(meta.label, meta.previewUrl),
+        value: path
       }))
     },
     onPick: (pick) => {
       const metas = uploadMetaBySession.get(pick.session.sessionId)
-      if (metas === undefined) return undefined
-      for (const [path, meta] of metas.entries()) {
-        if ((meta.relativePath ?? path) === pick.candidate.name) {
-          return {
-            insert: {
-              source: SOURCE_NAME,
-              ref: path,
-              label: meta.name,
-              clipboardText: `@${meta.relativePath ?? path}`
-            }
-          }
+      if (metas === undefined || pick.candidate.value === undefined) return undefined
+      const meta = metas.get(pick.candidate.value)
+      if (meta === undefined) return undefined
+      return {
+        insert: {
+          source: SOURCE_NAME,
+          ref: pick.candidate.value,
+          label: meta.name,
+          appearance: 'file',
+          clipboardText: `@${meta.name}`
         }
       }
-      return undefined
     },
     codec: {
       clipboardText: (ref) => ref,
