@@ -1,8 +1,27 @@
 /** UI strings for the attachments feature. The zh dictionary is the key-set
  * source of truth; en is the fallback. */
 
+/** Key union of the attachments dictionaries (zh is the key-set source of truth). */
+export type AttachmentsLocaleKey =
+  | 'http.413'
+  | 'http.415'
+  | 'http.403'
+  | 'http.429'
+  | 'upload.busy'
+  | 'upload.label'
+  | 'drag.title'
+  | 'drag.desc'
+  | 'card.remove'
+  | 'card.close'
+  | 'image.native'
+  | 'image.description'
+  | 'image.file'
+  | 'image.tag'
+  | 'menu.button'
+  | 'menu.upload.files'
+
 /** Simplified Chinese dictionary. */
-export const zh: Record<string, string> = {
+export const zh: Record<AttachmentsLocaleKey, string> = {
   'http.413': '文件超过大小限制',
   'http.415': '文件类型不被允许',
   'http.403': '会话校验失败，请刷新页面重试',
@@ -22,7 +41,7 @@ export const zh: Record<string, string> = {
 }
 
 /** English dictionary, checked complete against the zh key set (fallback). */
-export const en: Record<string, string> = {
+export const en: Record<AttachmentsLocaleKey, string> = {
   'http.413': 'File exceeds the size limit',
   'http.415': 'File type not allowed',
   'http.403': 'Session validation failed; refresh the page and try again',

@@ -1,4 +1,10 @@
-import type { Translator } from '../../shared/locale.ts'
+import type { ComposedProps, TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import { NS } from './constants.ts'
+
+// Loads the ui-conversation SlotMap declaration (conversation.input.left /
+// conversation.input.dock) so the composed slot props below resolve against
+// the real owner/scope contract instead of a hand-rolled key.
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 
 /** Per-session attachment metadata. */
 export interface UploadMeta {
@@ -9,29 +15,6 @@ export interface UploadMeta {
   error?: string
   previewUrl?: string
   relativePath?: string
-}
-
-/** Snapshot of the conversation input state. */
-export interface InputSnapshot {
-  draft: string
-  draftRev: number
-  occurrences: Array<{ source: string; ref: string; occurrenceId: string; offset: number }>
-}
-
-export interface InputService {
-  for(actx: unknown): {
-    state: { getSnapshot(): InputSnapshot }
-  }
-}
-
-export interface ConversationService {
-  input: InputService
-}
-
-/** Narrow view of the harness action context the client flow needs. */
-export interface ActionContext {
-  get(name: string): ConversationService | undefined
-  emit(event: string, payload: Record<string, unknown>): void
 }
 
 /** Response body of the host /api/upload route. */
@@ -49,8 +32,31 @@ export interface UploadResponse {
   error?: string
 }
 
-/** Props shared by the attachments UI components. */
-export interface AttachmentsProps {
+/** Typed translate of the attachments locale namespace. */
+export type AttachmentsTranslate = TranslateNS<typeof NS>
+
+/** Injected business face of the attachments slot entries. */
+export interface AttachmentsInjected {
   attach: (files: File[]) => Promise<void>
-  t: Translator
 }
+
+/** Props shared by the attachments UI components (manual render sites). */
+export interface AttachmentsProps extends AttachmentsInjected {
+  t: AttachmentsTranslate
+}
+
+/**
+ * Composed props of an entry registered into one of the input-region slots
+ * (`conversation.input.left` / `conversation.input.dock`, both `list` + `session`
+ * with the same `InputZone` owner share). The framework synthesizes the `t` seat
+ * from the `locale:` registration and the `attach` seat from the inject factory.
+ */
+export type AttachmentsSlotProps = ComposedProps<
+  'conversation.input.left',
+  string,
+  never,
+  undefined,
+  AttachmentsInjected,
+  never,
+  typeof NS
+>

@@ -1,9 +1,10 @@
-import type { Translator } from '../../shared/locale.ts'
+import type { AgentContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { ReferenceInsert } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
 import { SOURCE_NAME } from './constants.ts'
 import { clearUploadError, metaFor, setUploadError } from './state.ts'
-import type { ActionContext, UploadResponse } from './types.ts'
+import type { AttachmentsTranslate, UploadResponse } from './types.ts'
 
-export function httpErrorText(status: number, t: Translator): string {
+export function httpErrorText(status: number, t: AttachmentsTranslate): string {
   if (status === 413) return t('http.413')
   if (status === 415) return t('http.415')
   if (status === 403) return t('http.403')
@@ -11,7 +12,7 @@ export function httpErrorText(status: number, t: Translator): string {
   return `HTTP ${status}`
 }
 
-export async function uploadFile(actx: ActionContext, file: File, sessionId: string, t: Translator): Promise<string | null> {
+export async function uploadFile(actx: AgentContext, file: File, sessionId: string, t: AttachmentsTranslate): Promise<string | null> {
   const conversation = actx.get('conversation')
   if (conversation === undefined) throw new Error('conversation service unavailable')
   const input = conversation.input.for(actx)
@@ -77,13 +78,14 @@ export async function uploadFile(actx: ActionContext, file: File, sessionId: str
   // Markdown on demand).
   const refText = payload.relativePath !== undefined ? `@${payload.relativePath}` : payload.path
   const label = payload.preview !== undefined ? `[file: ${name}] (preview) ${payload.preview}` : ''
+  const reference: ReferenceInsert = {
+    source: SOURCE_NAME,
+    ref: payload.path,
+    label,
+    clipboardText: refText
+  }
   actx.emit('slash/input-insert-reference', {
-    reference: {
-      source: SOURCE_NAME,
-      ref: payload.path,
-      label,
-      clipboardText: refText
-    },
+    reference,
     span: {
       start: state.draft.length,
       end: state.draft.length,
@@ -151,7 +153,7 @@ export function filesFromClipboard(e: ClipboardEvent): File[] {
   return files
 }
 
-export async function attachFiles(actx: ActionContext, files: File[], sessionId: string, t: Translator): Promise<void> {
+export async function attachFiles(actx: AgentContext, files: File[], sessionId: string, t: AttachmentsTranslate): Promise<void> {
   for (const file of files) {
     try {
       await uploadFile(actx, file, sessionId, t)

@@ -3,13 +3,9 @@ import { Tooltip, IconCloseOutline16 } from '@deepseek-ai/dsh-client-ui-primitiv
 import { metaFor, subscribeErrors } from './state.ts'
 import { fileBadgeExt, formatBytes } from './format.ts'
 import { DragOverlay } from './overlay.tsx'
-import type { AttachmentsProps } from './types.ts'
+import type { AttachmentsSlotProps } from './types.ts'
 
-interface DockProps extends AttachmentsProps {
-  sessionId: string
-}
-
-export function UploadDock({ attach, sessionId, t }: DockProps) {
+export function UploadDock({ attach, sessionId, t }: AttachmentsSlotProps) {
   const [metaVersion, setMetaVersion] = useState(0)
   const [error, setError] = useState<{ seq: number; text: string } | null>(null)
 

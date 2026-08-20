@@ -10,77 +10,54 @@ import { uploadMetaBySession } from './attachments/state.ts'
 import { formatBytes } from './attachments/format.ts'
 import { PlusMenuButton } from './attachments/menu.tsx'
 import { UploadDock } from './attachments/dock.tsx'
-import type { ActionContext } from './attachments/types.ts'
-import type { Translator } from '../shared/locale.ts'
-
-/**
- * Narrow structural view of the harness client context consumed by this plugin.
- * The full service types live in the runtime-injected `@deepseek-ai/dsh-client-*`
- * packages; keeping this self-contained lets the client face type-check without
- * importing that whole graph.
- */
-interface ClientContext {
-  effect(fn: () => unknown): void
-  inputTriggers: {
-    registerSource(source: Record<string, unknown>): void
-  }
-  slots: {
-    inject(name: string, fn: () => unknown): void
-    register(spec: Record<string, unknown>, component: unknown): unknown
-  }
-  sessions: {
-    scope(sessionId: string): ActionContext
-  }
-  locale: {
-    register(ns: string, dicts: Record<string, Record<string, string>>): void
-    bind(ns: string): Translator
-  }
-}
+import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
+import type { InputTriggerSource } from '@deepseek-ai/dsh-client-ui-input-trigger/client'
+// Loads the client-locale service augmentation so `ctx.locale` resolves to the
+// real LocaleRuntime (typed register/bind) instead of an untyped member.
+import type {} from '@deepseek-ai/dsh-client-locale/client'
 
 export function apply(ctx: ClientContext): void {
   injectCss()
   ctx.effect(() => ctx.locale.register(NS, { zh, en }))
   const t = ctx.locale.bind(NS)
-  ctx.effect(() =>
-    ctx.inputTriggers.registerSource({
-      trigger: '@',
-      name: SOURCE_NAME,
-      // Codex-style: pick an already-uploaded file by its relative path.
-      candidates: async (projection: { sessionId: string }) => {
-        const metas = uploadMetaBySession.get(projection.sessionId)
-        if (metas === undefined) return []
-        return Array.from(metas.entries()).map(([path, meta]) => ({
-          name: meta.relativePath ?? path,
-          description: `${meta.label} · ${formatBytes(meta.bytes)}`,
-          icon: '📎'
-        }))
-      },
-      onPick: (pick: {
-        candidate: { name: string }
-        session: { sessionId: string }
-      }): { insert: { source: string; ref: string; label: string; clipboardText: string } } | undefined => {
-        const metas = uploadMetaBySession.get(pick.session.sessionId)
-        if (metas === undefined) return undefined
-        for (const [path, meta] of metas.entries()) {
-          if ((meta.relativePath ?? path) === pick.candidate.name) {
-            return {
-              insert: {
-                source: SOURCE_NAME,
-                ref: path,
-                label: meta.name,
-                clipboardText: `@${meta.relativePath ?? path}`
-              }
+
+  const referenceSource: InputTriggerSource = {
+    trigger: '@',
+    name: SOURCE_NAME,
+    // Codex-style: pick an already-uploaded file by its relative path.
+    candidates: async (session, _req) => {
+      const metas = uploadMetaBySession.get(session.sessionId)
+      if (metas === undefined) return []
+      return Array.from(metas.entries()).map(([path, meta]) => ({
+        name: meta.relativePath ?? path,
+        description: `${meta.label} · ${formatBytes(meta.bytes)}`,
+        icon: '📎'
+      }))
+    },
+    onPick: (pick) => {
+      const metas = uploadMetaBySession.get(pick.session.sessionId)
+      if (metas === undefined) return undefined
+      for (const [path, meta] of metas.entries()) {
+        if ((meta.relativePath ?? path) === pick.candidate.name) {
+          return {
+            insert: {
+              source: SOURCE_NAME,
+              ref: path,
+              label: meta.name,
+              clipboardText: `@${meta.relativePath ?? path}`
             }
           }
         }
-        return undefined
-      },
-      codec: {
-        clipboardText: (ref: string) => ref,
-        serialize: async (ref: string) => ref
       }
-    })
-  )
+      return undefined
+    },
+    codec: {
+      clipboardText: (ref) => ref,
+      serialize: async (ref, _signal) => ref
+    }
+  }
+  ctx.effect(() => ctx.inputTriggers.registerSource(referenceSource))
+
   ctx.slots.inject('conversation.input.left', () =>
     ctx.slots.register(
       {
@@ -88,8 +65,11 @@ export function apply(ctx: ClientContext): void {
         id: 'dsh-chat-enhancements-button',
         order: 0,
         locale: NS,
-        inject: (sessionId: string) => ({
-          attach: (files: File[]) => attachFiles(ctx.sessions.scope(sessionId), files, sessionId, t)
+        inject: (sessionId) => ({
+          attach: (files: File[]) => {
+            const scope = ctx.sessions.scope(sessionId)
+            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t)
+          }
         })
       },
       PlusMenuButton
@@ -102,8 +82,11 @@ export function apply(ctx: ClientContext): void {
         id: 'dsh-chat-enhancements-dock',
         order: 5,
         locale: NS,
-        inject: (sessionId: string) => ({
-          attach: (files: File[]) => attachFiles(ctx.sessions.scope(sessionId), files, sessionId, t)
+        inject: (sessionId) => ({
+          attach: (files: File[]) => {
+            const scope = ctx.sessions.scope(sessionId)
+            return scope === undefined ? Promise.resolve() : attachFiles(scope, files, sessionId, t)
+          }
         })
       },
       UploadDock

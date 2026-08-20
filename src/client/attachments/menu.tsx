@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Menu, IconPlusOutline16, IconPaperclipOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { pickFiles } from './upload.ts'
-import type { AttachmentsProps } from './types.ts'
+import type { AttachmentsSlotProps } from './types.ts'
 
-export function PlusMenuButton({ attach, t }: AttachmentsProps) {
+export function PlusMenuButton({ attach, t }: AttachmentsSlotProps) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
